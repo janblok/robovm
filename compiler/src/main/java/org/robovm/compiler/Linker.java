@@ -495,7 +495,7 @@ public class Linker {
     }
 
     private Function createLookup(ModuleBuilder mb, ClazzInfo ci, MethodInfo mi) {
-        Function function = FunctionBuilder.lookup(ci, mi, false);
+        Function function = FunctionBuilder.lookupExternal(ci, mi);
         String targetFnName = mangleMethod(ci.getInternalName(), mi.getName(), mi.getDesc());
         if (mi.isSynchronized()) {
             targetFnName += "_synchronized";

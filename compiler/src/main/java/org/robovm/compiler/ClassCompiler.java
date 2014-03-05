@@ -631,7 +631,7 @@ public class ClassCompiler {
             if (!sootClass.isInterface()) {
                 config.getVTableCache().get(sootClass);
             }
-            classInfoStruct = new Global(mangleClass(sootClass) + "_info_struct", Linkage.weak, createClassInfoStruct());
+            classInfoStruct = new Global(mangleClass(sootClass) + "_info_struct", Linkage.linkonce, createClassInfoStruct());
         } catch (IllegalArgumentException e) {
             // VTable throws this if any of the superclasses of the class is actually an interface.
             // Shouldn't happen frequently but the DRLVM test suite has some tests for this.
@@ -711,7 +711,7 @@ public class ClassCompiler {
     
     private void createLookupFunction(SootMethod m) {
         // TODO: This should use a virtual method table or interface method table.
-        Function function = FunctionBuilder.lookup(m, true);
+        Function function = FunctionBuilder.lookupOnce(m);
         mb.addFunction(function);
 
         Variable reserved0 = function.newVariable(I8_PTR_PTR);

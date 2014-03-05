@@ -113,11 +113,11 @@ public class TrampolineCompiler {
         
         if (t instanceof LdcString) {
             byte[] modUtf8 = stringToModifiedUtf8Z(t.getTarget());
-            Global g = new Global(getStringVarName(modUtf8) + "_ptr", weak, new NullConstant(OBJECT_PTR));
+            Global g = new Global(getStringVarName(modUtf8) + "_ptr", linkonce, new NullConstant(OBJECT_PTR));
             if (!mb.hasSymbol(g.getName())) {
                 mb.addGlobal(g);
             }
-            Function f = new FunctionBuilder(t).linkage(weak).build();
+            Function f = new FunctionBuilder(t).linkage(linkonce).build();
             mb.addFunction(f);
             Value result = call(f, BC_LDC_STRING, f.getParameterRef(0), g.ref(),
                     mb.getString(t.getTarget()), new IntegerConstant(t.getTarget().length()));
@@ -153,7 +153,7 @@ public class TrampolineCompiler {
             if (isArray(t.getTarget())) {
                 String fnName = "array_" + mangleClass(t.getTarget()) + "_instanceof";
                 if (!mb.hasSymbol(fnName)) {
-                    Function fn = new FunctionBuilder(t).name(fnName).linkage(weak).build();
+                    Function fn = new FunctionBuilder(t).name(fnName).linkage(linkonce).build();
                     Value arrayClass = callLdcArray(fn, t.getTarget());
                     Value result = call(fn, BC_INSTANCEOF_ARRAY, fn.getParameterRef(0), arrayClass, fn.getParameterRef(1));
                     fn.add(new Ret(result));
@@ -168,7 +168,7 @@ public class TrampolineCompiler {
             if (isArray(t.getTarget())) {
                 String fnName = "array_" + mangleClass(t.getTarget()) + "_checkcast";
                 if (!mb.hasSymbol(fnName)) {
-                    Function fn = new FunctionBuilder(t).name(fnName).linkage(weak).build();
+                    Function fn = new FunctionBuilder(t).name(fnName).linkage(linkonce).build();
                     Value arrayClass = callLdcArray(fn, t.getTarget());
                     Value result = call(fn, BC_CHECKCAST_ARRAY, fn.getParameterRef(0), arrayClass, fn.getParameterRef(1));
                     fn.add(new Ret(result));
@@ -190,7 +190,7 @@ public class TrampolineCompiler {
         } else if (t instanceof Anewarray) {
             String fnName = "array_" + mangleClass(t.getTarget()) + "_new";
             if (!mb.hasSymbol(fnName)) {
-                Function fn = new FunctionBuilder(t).name(fnName).linkage(weak).build();
+                Function fn = new FunctionBuilder(t).name(fnName).linkage(linkonce).build();
                 Value arrayClass = callLdcArray(fn, t.getTarget());
                 Value result = call(fn, BC_NEW_OBJECT_ARRAY, fn.getParameterRef(0), 
                       fn.getParameterRef(1), arrayClass);
@@ -201,7 +201,7 @@ public class TrampolineCompiler {
         } else if (t instanceof Multianewarray) {
             String fnName = "array_" + mangleClass(t.getTarget()) + "_multi";
             if (!mb.hasSymbol(fnName)) {
-                Function fn = new FunctionBuilder(t).name(fnName).linkage(weak).build();
+                Function fn = new FunctionBuilder(t).name(fnName).linkage(linkonce).build();
                 Value arrayClass = callLdcArray(fn, t.getTarget());
                 Value result = call(fn, BC_NEW_MULTI_ARRAY, fn.getParameterRef(0), 
                       fn.getParameterRef(1), fn.getParameterRef(2), arrayClass);
@@ -215,7 +215,7 @@ public class TrampolineCompiler {
             String shortName = mangleNativeMethod(target.getInternalName(), nc.getMethodName());
             String longName = mangleNativeMethod(target.getInternalName(), nc.getMethodName(), nc.getMethodDesc());
             if (target.isInBootClasspath() || !config.isUseDynamicJni() || config.getOs() == OS.ios) {
-                Function fnLong = new FunctionBuilder(longName, nc.getFunctionType()).linkage(weak).build();
+                Function fnLong = new FunctionBuilder(longName, nc.getFunctionType()).linkage(extern_weak).build();
                 // The NativeCall caller pushed a GatewayFrame and will only pop it 
                 // if the native method exists. So we need to pop it here.
                 popNativeFrame(fnLong);
@@ -227,7 +227,7 @@ public class TrampolineCompiler {
 //                mb.addFunctionDeclaration(new FunctionDeclaration(fnLong.ref()));
                 FunctionRef targetFn = fnLong.ref();
                 if (!isLongNativeFunctionNameRequired(nc)) {
-                    Function fnShort = new FunctionBuilder(shortName, nc.getFunctionType()).linkage(weak).build();
+                    Function fnShort = new FunctionBuilder(shortName, nc.getFunctionType()).linkage(extern_weak).build();
                     Value resultInner = call(fnShort, fnLong.ref(), fnShort.getParameterRefs());
                     fnShort.add(new Ret(resultInner));
                     mb.addFunction(fnShort);
@@ -412,8 +412,8 @@ public class TrampolineCompiler {
         String fnName = "array_" + mangleClass(targetClass) + "_ldc";
         FunctionRef fnRef = new FunctionRef(fnName, new FunctionType(OBJECT_PTR, ENV_PTR));
         if (!mb.hasSymbol(fnName)) {
-            Function fn = new FunctionBuilder(fnRef).name(fnName).linkage(weak).build();
-            Global g = new Global("array_" + mangleClass(targetClass) + "_ptr", weak, new NullConstant(OBJECT_PTR));
+            Function fn = new FunctionBuilder(fnRef).name(fnName).linkage(linkonce).build();
+            Global g = new Global("array_" + mangleClass(targetClass) + "_ptr", linkonce, new NullConstant(OBJECT_PTR));
             if (!mb.hasSymbol(g.getName())) {
                 mb.addGlobal(g);
             }
