@@ -63,6 +63,10 @@ public class Function {
         return name;
     }
 
+    public Linkage getLinkage() {
+        return linkage;
+    }
+
     public FunctionType getType() {
         return type;
     }
