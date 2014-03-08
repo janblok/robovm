@@ -207,6 +207,10 @@ public class FunctionBuilder {
                 .linkage(external).attribs(noinline, optsize).build();
     }
 
+    public static Function lookup(SootMethod method) {
+        return new FunctionBuilder(method).suffix("_lookup").build();
+    }
+
     public static Function lookupOnce(SootMethod method) {
         return new FunctionBuilder(method).suffix("_lookup").linkage(linkonce).build();
     }
