@@ -23,19 +23,33 @@ package org.robovm.compiler.llvm;
  */
 public class FunctionDeclaration {
     private final String name;
+    private final Linkage linkage;
     private final FunctionType type;
 
     public FunctionDeclaration(String name, FunctionType type) {
+    	this(name,type,null);
+    }
+    
+    public FunctionDeclaration(String name, FunctionType type,Linkage linkage) {
         this.name = name;
+        this.linkage = linkage;
         this.type = type;
     }
 
     public FunctionDeclaration(FunctionRef ref) {
         this(ref.getName(), ref.getType());
     }
-    
+
+    public FunctionDeclaration(Function f) {
+        this(f.getName(), f.getType(), f.getLinkage());
+    }
+
     public String getName() {
         return name;
+    }
+
+    public Linkage getLinkage() {
+        return linkage;
     }
 
     public FunctionType getType() {
@@ -52,6 +66,10 @@ public class FunctionDeclaration {
         Type[] parameterTypes = type.getParameterTypes();
         StringBuilder sb = new StringBuilder();
         sb.append("declare ");
+        if (linkage != null) {
+            sb.append(linkage);
+            sb.append(' ');
+        }
         sb.append(returnType.toString());
         sb.append(" @");
         sb.append(name);
