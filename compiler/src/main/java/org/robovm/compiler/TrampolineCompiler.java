@@ -215,7 +215,7 @@ public class TrampolineCompiler {
             String shortName = mangleNativeMethod(target.getInternalName(), nc.getMethodName());
             String longName = mangleNativeMethod(target.getInternalName(), nc.getMethodName(), nc.getMethodDesc());
             if (target.isInBootClasspath() || !config.isUseDynamicJni() || config.getOs() == OS.ios) {
-                Function fnLong = new FunctionBuilder(longName, nc.getFunctionType()).linkage(extern_weak).build();
+                Function fnLong = new FunctionBuilder(longName, nc.getFunctionType()).linkage(target.isInBootClasspath() ? extern_weak : weak).build();
                 // The NativeCall caller pushed a GatewayFrame and will only pop it 
                 // if the native method exists. So we need to pop it here.
                 popNativeFrame(fnLong);
@@ -223,15 +223,29 @@ public class TrampolineCompiler {
                         mb.getString(String.format(UNSATISFIED_LINK_ERROR, target.getClassName(),
                                 nc.getMethodName(), nc.getMethodDesc())));
                 fnLong.add(new Unreachable());
-                mb.addFunction(fnLong);
-//                mb.addFunctionDeclaration(new FunctionDeclaration(fnLong.ref()));
+                if (isLongNativeFunctionNameRequired(nc)) {
+	                if (target.isInBootClasspath())
+	                {
+	                	mb.addFunctionDeclaration(new FunctionDeclaration(fnLong));
+	                }
+	                else
+	                {
+	                	mb.addFunction(fnLong);
+	                }
+                }
                 FunctionRef targetFn = fnLong.ref();
                 if (!isLongNativeFunctionNameRequired(nc)) {
-                    Function fnShort = new FunctionBuilder(shortName, nc.getFunctionType()).linkage(extern_weak).build();
+                    Function fnShort = new FunctionBuilder(shortName, nc.getFunctionType()).linkage(target.isInBootClasspath() ? extern_weak : weak).build();
                     Value resultInner = call(fnShort, fnLong.ref(), fnShort.getParameterRefs());
                     fnShort.add(new Ret(resultInner));
-                    mb.addFunction(fnShort);
-//                    mb.addFunctionDeclaration(new FunctionDeclaration(fnShort.ref()));
+                    if (target.isInBootClasspath())
+                    {
+                    	mb.addFunctionDeclaration(new FunctionDeclaration(fnShort));
+                    }
+                    else
+                    {
+                    	mb.addFunction(fnShort);
+                    }
                     targetFn = fnShort.ref();
                 }
                 Function fn = new FunctionBuilder(nc).linkage(_private).attribs(alwaysinline, optsize).build();
