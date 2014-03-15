@@ -16,11 +16,21 @@
  */
 package org.robovm.compiler;
 
-import static org.robovm.compiler.Access.*;
-import static org.robovm.compiler.Functions.*;
-import static org.robovm.compiler.Mangler.*;
-import static org.robovm.compiler.llvm.Linkage.*;
-import static org.robovm.compiler.llvm.Type.*;
+import static org.robovm.compiler.Access.ILLEGAL_ACCESS_ERROR_CLASS;
+import static org.robovm.compiler.Access.checkClassAccessible;
+import static org.robovm.compiler.Functions.BC_LDC_CLASS;
+import static org.robovm.compiler.Functions.CHECKCAST_CLASS;
+import static org.robovm.compiler.Functions.CHECKCAST_INTERFACE;
+import static org.robovm.compiler.Functions.INSTANCEOF_CLASS;
+import static org.robovm.compiler.Functions.INSTANCEOF_INTERFACE;
+import static org.robovm.compiler.Functions.call;
+import static org.robovm.compiler.Functions.tailcall;
+import static org.robovm.compiler.Mangler.mangleClass;
+import static org.robovm.compiler.Mangler.mangleMethod;
+import static org.robovm.compiler.llvm.Linkage.external;
+import static org.robovm.compiler.llvm.Type.I32;
+import static org.robovm.compiler.llvm.Type.I8_PTR;
+import static org.robovm.compiler.llvm.Type.I8_PTR_PTR;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -249,9 +259,8 @@ public class Linker {
                         if (!name.equals("<clinit>") && !name.equals("<init>") 
                                 && !mi.isPrivate() && !mi.isStatic() && !mi.isFinal() && !mi.isAbstract()) {
 
-                            mb.addFunction(createLookup(mb, ci, mi));
+                            mb.addFunction(createLookupOverride(mb, ci, mi));
                         }
-
                     }
                 }
             }
@@ -286,8 +295,7 @@ public class Linker {
         passManager.addPromoteMemoryToRegisterPass();
         passManager.run(module);
         passManager.dispose();
-
-        String triple = arch.getLlvmName() + "-unknown-" + os;
+        String triple = config.getTriple();
         Target target = Target.lookupTarget(triple);
         TargetMachine targetMachine = target.createTargetMachine(triple);
         targetMachine.setAsmVerbosityDefault(true);
@@ -307,7 +315,7 @@ public class Linker {
         module.dispose();
         context.dispose();
         
-        objectFiles.add(linkerO);
+        objectFiles.add(0,linkerO);//add in front so lookup overrides work via linkonce
         
         config.getTarget().build(objectFiles);
     }
@@ -494,7 +502,8 @@ public class Linker {
         return fn;
     }
 
-    private Function createLookup(ModuleBuilder mb, ClazzInfo ci, MethodInfo mi) {
+    //overrides VTable lookups
+    private Function createLookupOverride(ModuleBuilder mb, ClazzInfo ci, MethodInfo mi) {
         Function function = FunctionBuilder.lookupExternal(ci, mi);
         String targetFnName = mangleMethod(ci.getInternalName(), mi.getName(), mi.getDesc());
         if (mi.isSynchronized()) {
@@ -512,5 +521,4 @@ public class Linker {
     private Value getInfoStruct(ModuleBuilder mb, Function f, Clazz clazz) {
         return new ConstantBitcast(mb.getGlobalRef(mangleClass(clazz.getInternalName()) + "_info_struct"), I8_PTR_PTR);
     }
-
 }
