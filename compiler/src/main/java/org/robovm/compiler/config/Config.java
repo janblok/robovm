@@ -191,7 +191,7 @@ public class Config {
     }
 
     public String getTriple() {
-        return arch.getLlvmName() + "-unknown-" + os;
+        return arch.getLlvmName() + "-unknown-" + os.getLlvmName();
     }
     
     public DataLayout getDataLayout() {

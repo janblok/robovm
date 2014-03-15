@@ -61,6 +61,11 @@ public enum OS {
         return (this == linux ? Family.linux : (this == windows ? Family.windows : Family.darwin));
     }
     
+    public String getLlvmName() 
+    {
+    	return (this == windows ? "mingw32" : this.toString());
+    }
+    
     public static OS getDefaultOS() {
         String hostTriple = Target.getHostTriple();
         if (hostTriple.contains("linux")) {
