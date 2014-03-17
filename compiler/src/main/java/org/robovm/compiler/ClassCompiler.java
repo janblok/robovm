@@ -317,10 +317,7 @@ public class ClassCompiler {
     
     public void compileFromIntermediate(byte[] ir,String classname, File oFile, Set<String> functionNames) throws IOException 
     {
-        Arch arch = config.getArch();
-        OS os = config.getOs();
-
-        config.getLogger().debug("Compiling %s (%s %s)", classname, os, arch);
+        config.getLogger().debug("Compiling %s (%s)", classname, config.getTriple());
 
         Context context = new Context();
         Module module = Module.parseIR(context, ir, classname);
