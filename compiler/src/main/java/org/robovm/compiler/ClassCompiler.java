@@ -708,7 +708,7 @@ public class ClassCompiler {
     
     private void createLookupFunction(SootMethod m) {
         // TODO: This should use a virtual method table or interface method table.
-        Function function = FunctionBuilder.lookupOnce(m);
+        Function function = FunctionBuilder.lookup(m);
         mb.addFunction(function);
 
         Variable reserved0 = function.newVariable(I8_PTR_PTR);

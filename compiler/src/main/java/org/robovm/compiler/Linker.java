@@ -259,7 +259,7 @@ public class Linker {
                         if (!name.equals("<clinit>") && !name.equals("<init>") 
                                 && !mi.isPrivate() && !mi.isStatic() && !mi.isFinal() && !mi.isAbstract()) {
 
-                            mb.addFunction(createLookupOverride(mb, ci, mi));
+//                            mb.addFunction(createLookupOverride(mb, ci, mi));
                         }
                     }
                 }
