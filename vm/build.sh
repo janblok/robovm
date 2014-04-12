@@ -3,6 +3,8 @@
 SELF=$(basename $0)
 BASE=$(cd $(dirname $0); pwd -P)
 CLEAN=0
+WORKERS=1
+WIN=0
 
 function usage {
   cat <<EOF
@@ -41,14 +43,18 @@ while [ "${1:0:2}" = '--' ]; do
   shift
 done
 
+OS=$(uname)
+
 if [ "x$TARGETS" = 'x' ]; then
-  OS=$(uname)
   case $OS in
   Darwin)
     TARGETS="macosx-x86 ios-x86 ios-thumbv7"
     ;;
   Linux)
     TARGETS="linux-x86"
+    ;;
+  Windows)
+    TARGETS="windows-x86"
     ;;
   *)
     echo "Unsupported OS: $OS"
@@ -62,7 +68,10 @@ fi
 
 # Validate targets
 for T in $TARGETS; do
-  if ! [[ $T =~ (macosx|ios|linux)-(x86|thumbv7) ]] ; then
+  if [[ $T =~ (windows)-(x86) ]] ; then
+    WIN=1
+  fi
+  if ! [[ $T =~ (macosx|ios|windows|linux)-(x86|thumbv7) ]] ; then
     echo "Unsupported target: $T"
     exit 1
   fi
@@ -85,7 +94,8 @@ if [ "$CLEAN" = '1' ]; then
   done
 fi
 
-if [ $(uname) = 'Darwin' ]; then
+case $OS in
+Darwin)
   if xcrun -f clang &> /dev/null; then
     CC=$(xcrun -f clang)
   else
@@ -96,10 +106,22 @@ if [ $(uname) = 'Darwin' ]; then
   else
     CXX=$(which clang++)
   fi
-else
-  CC=$(which gcc)
-  CXX=$(which g++)
-fi
+;;
+Linux)
+  if [ "$WIN" = '1' ]; then
+    CC=$(which i686-w64-mingw32-gcc)
+    CXX=$(which i686-w64-mingw32-g++)
+    WORKERS=1
+  else
+    CC=$(which gcc)
+    CXX=$(which g++)
+  fi
+;;
+*)
+  echo "Unsupported OS compiler: $OS"
+  exit 1
+  ;;
+esac
 
 for T in $TARGETS; do
   OS=${T%%-*}
@@ -108,7 +130,7 @@ for T in $TARGETS; do
     BUILD_TYPE=$B
     mkdir -p "$BASE/target/build/$T-$B"
     rm -rf "$BASE/binaries/$OS/$ARCH/$B"
-    bash -c "cd '$BASE/target/build/$T-$B'; cmake -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DOS=$OS -DARCH=$ARCH '$BASE'; make install"
+	bash -c "cd '$BASE/target/build/$T-$B'; cmake -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DOS=$OS -DARCH=$ARCH '$BASE'; make -j $WORKERS install"
     R=$?
     if [[ $R != 0 ]]; then
       echo "$T-$B build failed"

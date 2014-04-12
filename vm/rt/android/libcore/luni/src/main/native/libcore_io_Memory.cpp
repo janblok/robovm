@@ -22,6 +22,12 @@
 #include "ScopedPrimitiveArray.h"
 #include "UniquePtr.h"
 
+#ifndef WINDOWS
+#include <sys/mman.h>
+#else
+#include <stdlib.h>
+#endif
+
 // RoboVM note: Darwin has no byteswap.h
 #if defined(__APPLE__)
 #   include <libkern/OSByteOrder.h>
@@ -29,12 +35,17 @@
 #   define bswap_32(x) OSSwapInt32(x)
 #   define bswap_64(x) OSSwapInt64(x)
 #else
+#ifdef WINDOWS
+#   define bswap_16(x) _byteswap_ushort(x)
+#   define bswap_32(x) _byteswap_ulong(x)
+#   define bswap_64(x) _byteswap_uint64(x)
+#else
 #   include <byteswap.h>
+#endif 
 #endif
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/mman.h>
 
 #if defined(__arm__)
 // 32-bit ARM has load/store alignment restrictions for longs.

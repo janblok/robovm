@@ -37,6 +37,9 @@
 #   define isnanf(X) isnan(X)
 #endif
 
+#if defined(WINDOWS)
+#   define isnanf(X) isnan(X)
+#endif
 /*
  * ===========================================================================
  *      java.lang.Math

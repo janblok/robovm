@@ -27,6 +27,29 @@
 
 #define LOG_TAG "core.init"
 
+#if defined(WINDOWS)
+#include <stddef.h>
+char* strsep(char** stringp, const char* delim)
+{
+  char* start = *stringp;
+  char* p;
+
+  p = (start != NULL) ? strpbrk(start, delim) : NULL;
+
+  if (p == NULL)
+  {
+    *stringp = NULL;
+  }
+  else
+  {
+    *p = '\0';
+    *stringp = p + 1;
+  }
+
+  return start;
+}
+#endif
+
 ClassLoader* systemClassLoader = NULL;
 static Class* java_lang_Daemons = NULL;
 static Method* java_lang_Daemons_start = NULL;
@@ -72,10 +95,11 @@ static jboolean initClasspathEntries(Env* env, char* basePath, char** raw, Class
 jboolean rvmInitOptions(int argc, char* argv[], Options* options, jboolean ignoreRvmArgs) {
     SystemProperty** nextProperty = &options->properties; //Keep a pointer to where the next SystemProperty* will go.
     char path[PATH_MAX];
+#if !defined(WINDOWS)    
     if (!realpath(argv[0], path)) {
         return FALSE;
     }
-
+#endif
     strcpy(options->executablePath, path);
 
     jint i = strlen(path);
@@ -206,13 +230,17 @@ Env* rvmStartup(Options* options) {
     TRACE("Initializing GC");
     if (!initGC(options)) return NULL;
 
+#ifdef SIGPIPE
     // Ignore SIGPIPE signals. SIGPIPE interrupts write() calls which we don't
     // want. Dalvik does this too in dalvikvm/Main.cpp.
     if (!ignoreSignal(SIGPIPE)) return NULL;
+#endif
 
+#ifdef SIGXFSZ
     // Ignore SIGXFSZ signals. SIGXFSZ is raised when writing beyond the RLIMIT_FSIZE
     // of the current process (at least on Darwin) using pwrite().
     if (!ignoreSignal(SIGXFSZ)) return NULL;
+#endif
 
     VM* vm = rvmCreateVM(options);
     if (!vm) return NULL;

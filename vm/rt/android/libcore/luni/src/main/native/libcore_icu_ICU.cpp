@@ -52,7 +52,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <string>
+// CARL : mman 
+#ifndef WINDOWS
 #include <sys/mman.h>
+#endif
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -557,7 +560,8 @@ extern "C" jobject Java_libcore_icu_ICU_getAvailableCurrencyCodes(JNIEnv* env, j
 // file and modify the entry names.
 
 // Paths of supported ICU versions in order of preference
-const char * const supportedIcuPaths[] = { "icudt48l", "icudt49l", "icudt46l", "icudt51l", NULL };
+const char * const supportedIcuPaths[] = { "icudt48l", "icudt49l", "icudt46l" };
+#define SUPPORTED_ICU_PATHS_LENGTH 3
 // The ICU path we're using
 static const char *icuPath = NULL;
 
@@ -574,7 +578,7 @@ static void modTocEntryName(const char *oldTocEntryName, char *newTocEntryName) 
 
 int register_libcore_icu_ICU(JNIEnv* env) {
     std::string path;
-    for (unsigned int i = 0; supportedIcuPaths[i] != NULL; i++) {
+    for (unsigned int i = 0; i < SUPPORTED_ICU_PATHS_LENGTH; i++) {
         path = u_getDataDirectory();
         path += "/";
         path += supportedIcuPaths[i];
@@ -614,6 +618,11 @@ int register_libcore_icu_ICU(JNIEnv* env) {
         FAIL_WITH_STRERROR("stat");
     }
 
+// CARL : mman 
+
+#ifdef WINDOWS 
+	void* data = NULL ;
+#else
     // Map it.
     void* data = mmap(NULL, sb.st_size, PROT_READ, MAP_SHARED, fd.get(), 0);
     if (data == MAP_FAILED) {
@@ -624,6 +633,7 @@ int register_libcore_icu_ICU(JNIEnv* env) {
     if (madvise(data, sb.st_size, MADV_RANDOM) == -1) {
         FAIL_WITH_STRERROR("madvise(MADV_RANDOM)");
     }
+#endif 
 
     // Tell ICU to use our memory-mapped data.
     UErrorCode status = U_ZERO_ERROR;

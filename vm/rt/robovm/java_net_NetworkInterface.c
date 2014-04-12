@@ -16,21 +16,27 @@
 #include <robovm.h>
 #include <unistd.h>
 #include <sys/types.h>
+#if defined(WINDOWS)
+#   include <winsock2.h>
+#   include <ws2tcpip.h>
+//http://msdn.microsoft.com/en-us/library/ms738545(v=vs.85).aspx
+//http://msdn.microsoft.com/en-us/library/ms740096(VS.85).aspx
+#else
 #include <sys/socket.h>
 #include <net/if.h>
 #include <sys/ioctl.h>
 #include <netinet/in.h>
 #include <ifaddrs.h>
-#include <errno.h>
-#include <string.h>
-#include <stdlib.h>
-
 #if defined(DARWIN)
 #   include <net/if_dl.h>
 #   include <sys/sockio.h>
 #else
 #   include <net/if_arp.h>
 #endif
+#endif
+#include <errno.h>
+#include <string.h>
+#include <stdlib.h>
 
 static Class* java_lang_String_array = NULL;
 
@@ -48,6 +54,7 @@ static void throwSocketExceptionErrno(Env* env, int errnum) {
 }
 
 static jboolean ioctl_ifreq(Env* env, Object* interfaceName, struct ifreq* ifreq, int request) {
+#if !defined(WINDOWS)
     const char* name = rvmGetStringUTFChars(env, interfaceName);
     if (!name) {
         return FALSE;
@@ -69,10 +76,13 @@ static jboolean ioctl_ifreq(Env* env, Object* interfaceName, struct ifreq* ifreq
     close(sock);
 
     return TRUE;
-
+#else
+    return FALSE;
+#endif
 }
 
 static jboolean iterateAddrInfo(Env* env, const char* interfaceName, jboolean (*f)(Env*, struct ifaddrs *, void*), void* data) {
+#if !defined(WINDOWS)
     struct ifaddrs *ap, *apit;
     if (getifaddrs(&ap) < 0) {
         throwSocketExceptionErrno(env, errno);
@@ -89,9 +99,13 @@ static jboolean iterateAddrInfo(Env* env, const char* interfaceName, jboolean (*
 
     freeifaddrs(ap);
     return TRUE;
+#else
+    return FALSE;
+#endif
 }
 
 ObjectArray* Java_java_net_NetworkInterface_getInterfaceNames(Env* env, Class* cls) {
+#if !defined(WINDOWS)
     if (!java_lang_String_array) {
         java_lang_String_array = rvmFindClassUsingLoader(env, "[Ljava/lang/String;", NULL);
         if (!java_lang_String_array) {
@@ -127,30 +141,45 @@ ObjectArray* Java_java_net_NetworkInterface_getInterfaceNames(Env* env, Class* c
 done:
     if_freenameindex(ifs);
     return result;
+#else
+    return NULL;
+#endif
 }
 
 jint Java_java_net_NetworkInterface_getInterfaceIndex(Env* env, Class* cls, Object* interfaceName) {
+#if !defined(WINDOWS)
     const char* name = rvmGetStringUTFChars(env, interfaceName);
     if (!name) {
         return 0;
     }
     return if_nametoindex(name);
+#else
+    return 0;
+#endif
 }
 
 jint Java_java_net_NetworkInterface_getFlags(Env* env, Class* cls, Object* interfaceName) {
+#if !defined(WINDOWS)
     struct ifreq ifreq;
     if (!ioctl_ifreq(env, interfaceName, &ifreq, SIOCGIFFLAGS)) {
         return 0;
     }
     return ((jint) ifreq.ifr_flags) & 0xffff;
+#else
+    return 0;
+#endif
 }
 
 jint Java_java_net_NetworkInterface_getMTU(Env* env, Class* cls, Object* interfaceName) {
+#if !defined(WINDOWS)
     struct ifreq ifreq;
     if (!ioctl_ifreq(env, interfaceName, &ifreq, SIOCGIFMTU)) {
         return 0;
     }
     return ifreq.ifr_mtu;
+#else
+    return 0;
+#endif
 }
 
 #if defined(DARWIN)
@@ -170,12 +199,14 @@ static jboolean getHardwareAddressIterator(Env* env, struct ifaddrs *ia, void* d
     return TRUE; // Continue iteration
 }
 #endif
+
 ByteArray* Java_java_net_NetworkInterface_getHardwareAddress(Env* env, Class* cls, Object* interfaceName) {
     const char* name = rvmGetStringUTFChars(env, interfaceName);
     if (!name) {
         return NULL;
     }
     ByteArray* result = NULL;
+#if !defined(WINDOWS)
 #if defined(DARWIN)
     // Darwin doesn't have SIOCGIFHWADDR so we need to use getifaddrs() instead.
     iterateAddrInfo(env, name, getHardwareAddressIterator, &result);
@@ -191,10 +222,11 @@ ByteArray* Java_java_net_NetworkInterface_getHardwareAddress(Env* env, Class* cl
         }
     }
 #endif
+#endif
     return result;
 }
 
-
+#if !defined(WINDOWS)
 static jboolean countIpv6AddressesIterator(Env* env, struct ifaddrs *ia, void* data) {
     jint* count = (jint*) data;
     if (ia->ifa_addr && ia->ifa_addr->sa_family == AF_INET6) {
@@ -244,3 +276,8 @@ ByteArray* Java_java_net_NetworkInterface_getIpv6Addresses(Env* env, Class* cls,
     }
     return result;
 }
+#else
+ByteArray* Java_java_net_NetworkInterface_getIpv6Addresses(Env* env, Class* cls, Object* interfaceName) {
+    return NULL;
+}
+#endif

@@ -23,6 +23,18 @@
 #include <string.h>
 #include <assert.h>
 
+#if defined(WINDOWS)
+int strerror_r(int errnum, char *buf, size_t buflen)
+{
+	/* non-recursive implementation of strerror_r */
+	char * retbuf;
+	retbuf = strerror(errnum);
+	strncpy(buf, retbuf, buflen);
+	buf[buflen - 1] = '\0';
+	return 0;
+}
+#endif
+
 /**
  * Equivalent to ScopedLocalRef, but for C_JNIEnv instead. (And slightly more powerful.)
  */

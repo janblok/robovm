@@ -71,7 +71,7 @@ static jint AttachCurrentThreadAsDaemon(JavaVM* vm, void** penv, void* args) {
     return rvmAttachCurrentThreadAsDaemon((VM*) vm, (Env**) penv, name, group);
 }
 
-static jint GetVersion(JNIEnv* env) {
+static jint GetJNIVersion(JNIEnv* env) {
     return JNI_VERSION_1_4;
 }
 
@@ -1203,7 +1203,7 @@ struct JNINativeInterface_ jni = {
     NULL,
     NULL,
     NULL,
-    &GetVersion,
+    &GetJNIVersion,
     &DefineClass,
     &FindClass,
     &FromReflectedMethod,

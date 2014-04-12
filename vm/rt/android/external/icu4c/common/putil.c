@@ -656,7 +656,9 @@ extern U_IMPORT char *U_TZNAME[];
 
 #if !UCONFIG_NO_FILE_IO && (defined(U_DARWIN) || defined(U_LINUX) || defined(U_BSD))
 /* These platforms are likely to use Olson timezone IDs. */
+#if !U_MINGW
 #define CHECK_LOCALTIME_LINK 1
+#endif
 #if defined(U_DARWIN)
 #include <tzfile.h>
 #define TZZONEINFO      (TZDIR "/")

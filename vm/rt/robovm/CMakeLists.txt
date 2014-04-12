@@ -24,6 +24,7 @@ set(SRC
   org_robovm_rt_VM.c 
   org_robovm_rt_bro_Dl.c 
   sun_misc_Unsafe.c 
+  dlfcn.c
 )
 
 if(DARWIN)

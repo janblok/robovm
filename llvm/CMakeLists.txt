@@ -1,14 +1,48 @@
 cmake_minimum_required(VERSION 2.8)
-project(robovm-llvm)
-include(ExternalProject)
 
-find_package(JNI REQUIRED)
+include(ExternalProject)
 
 if(OS STREQUAL "linux")
   set(LINUX YES)
 elseif(OS STREQUAL "macosx")
   set(MACOSX YES)
+elseif(OS STREQUAL "win")
+  set(WIN YES)
 endif()
+
+if (WIN)
+  # set(CMAKE_CROSSCOMPILING TRUE) 
+  # set(CMAKE_SHARED_LIBRARY_LINK_C_FLAGS "")
+  # set(CMAKE_SHARED_LIBRARY_LINK_CXX_FLAGS "")
+  set(CMAKE_SYSTEM_NAME Windows)
+  set(CMAKE_RC_COMPILER "/usr/bin/x86_64-w64-mingw32-windres")
+ 
+  set(JAVA_AWT_LIBRARY "/usr/lib/jvm/java-7-openjdk-amd64/jre/lib/amd64/libawt.so")
+  set(JAVA_JVM_LIBRARY "/usr/lib/jvm/java-7-openjdk-amd64/jre/lib/amd64/server/libjvm.so")
+
+  # here is the target environment located
+  # SET(CMAKE_FIND_ROOT_PATH /usr/x86_64-w64-mingw32/) 
+  # SET(ENV{GF2X_CONFIGURE_EXTRA_FLAGS} "--host=x86_64-w64-mingw32")
+  # SET(ENV{PREFIX} "$ENV{HOME}/mingw-w64/usr/local/")
+
+  # adjust the default behaviour of the FIND_XXX() commands:
+  # search headers and libraries in the target environment, search
+  # programs in the host environment
+  set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+  set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+  set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+endif()
+
+project(robovm-llvm)
+
+find_package(JNI)
+
+if (JNI_FOUND)
+    message (STATUS "JNI_INCLUDE_DIRS=${JNI_INCLUDE_DIRS}")
+    message (STATUS "JNI_LIBRARIES=${JNI_LIBRARIES}")
+endif()
+
+find_package(JNI REQUIRED)
 
 if (ARCH STREQUAL "x86")
   set(X86 YES)
@@ -29,13 +63,19 @@ elseif(LINUX AND X86)
 elseif(LINUX AND X86_64)
   set(C_CXX_FLAGS "${C_CXX_FLAGS} -m64")
   set(LD_FLAGS "${LD_FLAGS} -m64")
+elseif(WIN AND X86)
+  set(C_CXX_FLAGS "${C_CXX_FLAGS} -m32 -static-libgcc -static-libstdc++")
+  set(LD_FLAGS "${LD_FLAGS} -m32")
+elseif(WIN AND X86_64)
+  set(C_CXX_FLAGS "${C_CXX_FLAGS} -m64 -static-libgcc -static-libstdc++")
+  set(LD_FLAGS "${LD_FLAGS} -m64")
 endif()
 
 set(LLVM_ARCHS "X86^^ARM")
 set(LLVM_C_FLAGS "${C_CXX_FLAGS} -fvisibility=hidden -fdata-sections -ffunction-sections")
 set(LLVM_CXX_FLAGS "${C_CXX_FLAGS} -fvisibility=hidden -fdata-sections -ffunction-sections")
 ExternalProject_Add(extllvm
-  URL http://llvm.org/releases/3.3/llvm-3.3.src.tar.gz
+  URL http://llvm.org/releases/3.4/llvm-3.4.src.tar.gz
   LIST_SEPARATOR ^^
   CONFIGURE_COMMAND cmake -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=OFF "-DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/llvm" "-DLLVM_TARGETS_TO_BUILD=${LLVM_ARCHS}" "-DCMAKE_C_FLAGS=${LLVM_C_FLAGS}" "-DCMAKE_CXX_FLAGS=${LLVM_CXX_FLAGS}" ../extllvm/
 )
@@ -61,6 +101,10 @@ if(LINUX)
   set(LLVM_LDFLAGS
     -L"${CMAKE_BINARY_DIR}/llvm/lib"
     -lrt -ldl -lpthread -lz
+  )
+elseif(WIN)
+  set(LLVM_LDFLAGS
+    -L"${CMAKE_BINARY_DIR}/llvm/lib"
   )
 elseif(MACOSX)
   set(LLVM_LDFLAGS

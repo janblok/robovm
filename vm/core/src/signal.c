@@ -60,8 +60,10 @@ static InstanceField* stackStateField = NULL;
 static CallStack* dumpThreadStackTraceCallStack = NULL;
 static sem_t dumpThreadStackTraceCallSemaphore;
 
+#if !defined(WINDOWS)
 static void signalHandler_npe_so(int signum, siginfo_t* info, void* context);
 static void signalHandler_dump_thread(int signum, siginfo_t* info, void* context);
+#endif
 
 #if defined(DARWIN)
 // Weak stub for the function in vm/debug/src/debug.c. If librobovm-debug.a isn't
@@ -84,6 +86,7 @@ jboolean rvmInitSignals(Env* env) {
 }
 
 static jboolean installSignalHandlers(Env* env) {
+#if !defined(WINDOWS)
     struct sigaction sa;
 
     sigemptyset(&sa.sa_mask);
@@ -121,7 +124,7 @@ static jboolean installSignalHandlers(Env* env) {
         rvmTearDownSignals(env);
         return FALSE;        
     }
-
+#endif
     return TRUE;
 }
 
@@ -139,6 +142,7 @@ void rvmRestoreSignalMask(Env* env) {
 void rvmTearDownSignals(Env* env) {
 }
 
+#if !defined(WINDOWS)
 void dumpThreadStackTrace(Env* env, Thread* thread, CallStack* callStack) {
     // NOTE: This function must not be called concurrently. It uses global 
     // variables to transfer data to/from a signal handler.
@@ -247,3 +251,4 @@ static void signalHandler_dump_thread(int signum, siginfo_t* info, void* context
     }
     sem_post(&dumpThreadStackTraceCallSemaphore);
 }
+#endif

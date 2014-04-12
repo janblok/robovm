@@ -51,4 +51,8 @@ U_CFUNC void  uprv_unmapFile(UDataMemory *pData);
 #   define MAP_IMPLEMENTATION MAP_STDIO
 #endif
 
+#if defined(U_MINGW) 
+#define MAP_IMPLEMENTATION MAP_WIN32
+#endif
+
 #endif

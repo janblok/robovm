@@ -403,6 +403,7 @@ set(SRC
   rand/rand_egd.c
   rand/rand_err.c
   rand/rand_lib.c
+  rand/rand_win.c 
   rand/rand_unix.c
   rand/randfile.c
   rc2/rc2_cbc.c

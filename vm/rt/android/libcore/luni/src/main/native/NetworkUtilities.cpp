@@ -21,11 +21,16 @@
 #include "JniConstants.h"
 #include "ScopedLocalRef.h"
 
-#include <arpa/inet.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/socket.h>
+#if defined(WINDOWS)
+#   include <winsock2.h>
+#   include <ws2tcpip.h>
+#else
+#   include <arpa/inet.h>
+#   include <sys/socket.h>
+#endif
 
 jobject sockaddrToInetAddress(JNIEnv* env, const sockaddr_storage* ss, jint* port) {
     // Convert IPv4-mapped IPv6 addresses to IPv4 addresses.
@@ -162,6 +167,7 @@ bool inetAddressToSockaddr(JNIEnv* env, jobject inetAddress, int port, sockaddr_
 }
 
 bool setBlocking(int fd, bool blocking) {
+#if !defined(WINDOWS)
     int flags = fcntl(fd, F_GETFL);
     if (flags == -1) {
         return false;
@@ -175,4 +181,7 @@ bool setBlocking(int fd, bool blocking) {
 
     int rc = fcntl(fd, F_SETFL, flags);
     return (rc != -1);
+#else
+    return false;
+#endif
 }

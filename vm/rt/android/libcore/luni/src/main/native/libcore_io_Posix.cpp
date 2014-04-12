@@ -16,6 +16,8 @@
 
 #define LOG_TAG "Posix"
 
+#ifndef WINDOWS
+
 #include "AsynchronousSocketCloseMonitor.h"
 #include "JNIHelp.h"
 #include "JniConstants.h"
@@ -1394,4 +1396,4 @@ extern "C" jint Java_libcore_io_Posix_writev(JNIEnv* env, jobject, jobject javaF
     int fd = jniGetFDFromFileDescriptor(env, javaFd);
     return throwIfMinusOne(env, "writev", TEMP_FAILURE_RETRY(writev(fd, ioVec.get(), ioVec.size())));
 }
-
+#endif

@@ -41,8 +41,12 @@ static AsynchronousSocketCloseMonitor* blockedThreadList = NULL;
 #if defined(SIGRTMIN)
     static const int BLOCKED_THREAD_SIGNAL = SIGRTMIN + 2;
 #else
+#if defined(WINDOWS)
+    static const int BLOCKED_THREAD_SIGNAL = 0;
+#else
     static const int BLOCKED_THREAD_SIGNAL = SIGUSR1;
 #endif    
+#endif
 
 static void blockedThreadSignalHandler(int /*signal*/) {
     // Do nothing. We only sent this signal for its side-effect of interrupting syscalls.
@@ -52,6 +56,7 @@ void AsynchronousSocketCloseMonitor::init() {
     // Ensure that the signal we send interrupts system calls but doesn't kill threads.
     // Using sigaction(2) lets us ensure that the SA_RESTART flag is not set.
     // (The whole reason we're sending this signal is to unblock system calls!)
+#if !defined(WINDOWS)
     struct sigaction sa;
     memset(&sa, 0, sizeof(sa));
     sa.sa_handler = blockedThreadSignalHandler;
@@ -60,6 +65,7 @@ void AsynchronousSocketCloseMonitor::init() {
     if (rc == -1) {
         ALOGE("setting blocked thread signal handler failed: %s", strerror(errno));
     }
+#endif
 }
 
 void AsynchronousSocketCloseMonitor::signalBlockedThreads(int fd) {

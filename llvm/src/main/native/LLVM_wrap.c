@@ -10685,7 +10685,7 @@ SWIGEXPORT void JNICALL Java_org_robovm_llvm_binding_LLVMJNI_TargetOptionsSetNoF
   LLVMTargetOptionsSetNoFramePointerElim(arg1,arg2);
 }
 
-
+/*
 SWIGEXPORT jboolean JNICALL Java_org_robovm_llvm_binding_LLVMJNI_TargetOptionsGetNoFramePointerElimNonLeaf(JNIEnv *jenv, jclass jcls, jlong jarg1) {
   jboolean jresult = 0 ;
   LLVMTargetOptionsRef arg1 = (LLVMTargetOptionsRef) 0 ;
@@ -10709,7 +10709,7 @@ SWIGEXPORT void JNICALL Java_org_robovm_llvm_binding_LLVMJNI_TargetOptionsSetNoF
   arg1 = *(LLVMTargetOptionsRef *)&jarg1; 
   arg2 = jarg2; 
   LLVMTargetOptionsSetNoFramePointerElimNonLeaf(arg1,arg2);
-}
+}*/
 
 
 SWIGEXPORT jboolean JNICALL Java_org_robovm_llvm_binding_LLVMJNI_TargetOptionsGetLessPreciseFPMADOption(JNIEnv *jenv, jclass jcls, jlong jarg1) {
@@ -11023,7 +11023,7 @@ SWIGEXPORT void JNICALL Java_org_robovm_llvm_binding_LLVMJNI_TargetOptionsSetSta
   LLVMTargetOptionsSetStackAlignmentOverride(arg1,arg2);
 }
 
-
+/*
 SWIGEXPORT jboolean JNICALL Java_org_robovm_llvm_binding_LLVMJNI_TargetOptionsGetRealignStack(JNIEnv *jenv, jclass jcls, jlong jarg1) {
   jboolean jresult = 0 ;
   LLVMTargetOptionsRef arg1 = (LLVMTargetOptionsRef) 0 ;
@@ -11073,7 +11073,7 @@ SWIGEXPORT void JNICALL Java_org_robovm_llvm_binding_LLVMJNI_TargetOptionsSetSSP
   arg1 = *(LLVMTargetOptionsRef *)&jarg1; 
   arg2 = (unsigned int)jarg2; 
   LLVMTargetOptionsSetSSPBufferSize(arg1,arg2);
-}
+}*/
 
 
 SWIGEXPORT jboolean JNICALL Java_org_robovm_llvm_binding_LLVMJNI_TargetOptionsGetEnableFastISel(JNIEnv *jenv, jclass jcls, jlong jarg1) {

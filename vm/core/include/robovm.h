@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <assert.h>
+#include <signal.in.h>
 
 // Keep assert() even in release builds but just abort.
 #ifdef NDEBUG
