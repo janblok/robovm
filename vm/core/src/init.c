@@ -73,9 +73,11 @@ static char* absolutize(char* basePath, char* rel, char* dest) {
 }
 
 static jboolean ignoreSignal(int signo) {
+#if !defined(WINDOWS)
     if (signal(signo, SIG_IGN) == SIG_ERR) {
         return FALSE;
     }
+#endif
     return TRUE;
 }
 

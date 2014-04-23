@@ -136,14 +136,16 @@ jboolean rvmSetupSignals(Env* env) {
 }
 
 void rvmRestoreSignalMask(Env* env) {
+#if !defined(WINDOWS)
     pthread_sigmask(SIG_SETMASK, &env->currentThread->signalMask, NULL);
+#endif
 }
 
 void rvmTearDownSignals(Env* env) {
 }
 
-#if !defined(WINDOWS)
 void dumpThreadStackTrace(Env* env, Thread* thread, CallStack* callStack) {
+#if !defined(WINDOWS)
     // NOTE: This function must not be called concurrently. It uses global 
     // variables to transfer data to/from a signal handler.
 
@@ -155,8 +157,10 @@ void dumpThreadStackTrace(Env* env, Thread* thread, CallStack* callStack) {
 
     while (sem_wait(&dumpThreadStackTraceCallSemaphore) == EINTR) {
     }
+#endif
 }
 
+#if !defined(WINDOWS)
 static inline void* getFramePointer(ucontext_t* context) {
 #if defined(DARWIN)
 #   if defined(RVM_X86)

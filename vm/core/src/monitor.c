@@ -52,6 +52,77 @@ typedef int32_t s4;
 typedef uint64_t u8;
 typedef int64_t s8;
 
+#if defined(WINDOWS)
+#include <windows.h>
+
+/* Number of 100ns-seconds between the beginning of the Windows epoch
+ * (Jan. 1, 1601) and the Unix epoch (Jan. 1, 1970)
+ */
+#define DELTA_EPOCH_IN_100NS    INT64_C(116444736000000000)
+
+#define MAX_SLEEP_IN_MS         4294967294UL
+
+#define POW10_2     INT64_C(100)
+#define POW10_3     INT64_C(1000)
+#define POW10_4     INT64_C(10000)
+#define POW10_6     INT64_C(1000000)
+#define POW10_7     INT64_C(10000000)
+#define POW10_9     INT64_C(1000000000)
+
+/**
+ * Sleep for the specified time.
+ * @param  request The desired amount of time to sleep.
+ * @param  remain The remain amount of time to sleep.
+ * @return If the function succeeds, the return value is 0.
+ *         If the function fails, the return value is -1,
+ *         with errno set to indicate the error.
+ */
+int nanosleep(const struct timespec *request, struct timespec *remain)
+{
+    unsigned long ms, rc = 0;
+    unsigned __int64 u64, want, real;
+
+    union {
+        unsigned __int64 ns100;
+        FILETIME ft;
+    }  _start, _end;
+
+    if (request->tv_sec < 0 || request->tv_nsec < 0 || request->tv_nsec >= POW10_9) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    if (remain != NULL) GetSystemTimeAsFileTime(&_start.ft);
+
+    want = u64 = request->tv_sec * POW10_3 + request->tv_nsec / POW10_6;
+    while (u64 > 0 && rc == 0) {
+        if (u64 >= MAX_SLEEP_IN_MS) ms = MAX_SLEEP_IN_MS;
+        else ms = (unsigned long) u64;
+
+        u64 -= ms;
+        rc = SleepEx(ms, TRUE);
+    }
+
+    if (rc != 0) { /* WAIT_IO_COMPLETION */
+        if (remain != NULL) {
+            GetSystemTimeAsFileTime(&_end.ft);
+            real = (_end.ns100 - _start.ns100) / POW10_4;
+
+            if (real >= want) u64 = 0;
+            else u64 = want - real;
+
+            remain->tv_sec = u64 / POW10_3;
+            remain->tv_nsec = (long) (u64 % POW10_3) * POW10_6;
+        }
+
+        errno = EINTR;
+        return -1;
+    }
+
+    return 0;
+}
+#endif
+
 #if defined(RVM_X86)
 static inline void android_atomic_release_store(int32_t value, volatile int32_t *ptr)
 {

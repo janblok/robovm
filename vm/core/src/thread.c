@@ -54,6 +54,7 @@ inline void rvmUnlockThreadsList() {
  */
 static void* getStackAddress(void) {
     void* result = NULL;
+#if !defined(WINDOWS)
     size_t stackSize = 0;
     pthread_t self = pthread_self();
 #if defined(DARWIN)
@@ -89,6 +90,7 @@ static void* getStackAddress(void) {
     // including the guard page (except for the main thread which returns the correct stack address and 
     // pthread_attr_getguardsize() returns 0 even if there is a guard page).
     result += guardSize;
+#endif
 #endif
     return result;
 }
@@ -392,7 +394,9 @@ jlong rvmStartThread(Env* env, JavaThread* threadObj) {
     pthread_attr_init(&threadAttr);
     pthread_attr_setdetachstate(&threadAttr, PTHREAD_CREATE_DETACHED);
     pthread_attr_setstacksize(&threadAttr, stackSize);
+#if !defined(WINDOWS)
     pthread_attr_setguardsize(&threadAttr, THREAD_STACK_GUARD_SIZE);
+#endif
 
     ThreadEntryPointArgs args = {0};
     args.env = newEnv;
