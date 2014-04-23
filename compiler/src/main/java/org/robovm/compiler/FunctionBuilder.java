@@ -207,12 +207,16 @@ public class FunctionBuilder {
                 .linkage(external).attribs(noinline, optsize).build();
     }
 
-    public static Function lookup(SootMethod method, boolean isWeak) {
-        return new FunctionBuilder(method).suffix("_lookup").linkage(isWeak ? weak : external).build();
+    public static Function lookup(SootMethod method) {
+        return new FunctionBuilder(method).suffix("_lookup").build();
     }
 
-    public static Function lookup(ClazzInfo ci, MethodInfo mi, boolean isWeak) {
-        return new FunctionBuilder(ci, mi).suffix("_lookup").linkage(isWeak ? weak : external).build();
+    public static Function lookupOnce(SootMethod method) {
+        return new FunctionBuilder(method).suffix("_lookup").linkage(linkonce).build();
+    }
+
+    public static Function lookupExternal(ClazzInfo ci, MethodInfo mi) {
+        return new FunctionBuilder(ci, mi).suffix("_lookup").linkage(external).build();
     }
 
     public static Function structMember(SootMethod method) {

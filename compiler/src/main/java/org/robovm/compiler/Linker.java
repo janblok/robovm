@@ -16,11 +16,21 @@
  */
 package org.robovm.compiler;
 
-import static org.robovm.compiler.Access.*;
-import static org.robovm.compiler.Functions.*;
-import static org.robovm.compiler.Mangler.*;
-import static org.robovm.compiler.llvm.Linkage.*;
-import static org.robovm.compiler.llvm.Type.*;
+import static org.robovm.compiler.Access.ILLEGAL_ACCESS_ERROR_CLASS;
+import static org.robovm.compiler.Access.checkClassAccessible;
+import static org.robovm.compiler.Functions.BC_LDC_CLASS;
+import static org.robovm.compiler.Functions.CHECKCAST_CLASS;
+import static org.robovm.compiler.Functions.CHECKCAST_INTERFACE;
+import static org.robovm.compiler.Functions.INSTANCEOF_CLASS;
+import static org.robovm.compiler.Functions.INSTANCEOF_INTERFACE;
+import static org.robovm.compiler.Functions.call;
+import static org.robovm.compiler.Functions.tailcall;
+import static org.robovm.compiler.Mangler.mangleClass;
+import static org.robovm.compiler.Mangler.mangleMethod;
+import static org.robovm.compiler.llvm.Linkage.external;
+import static org.robovm.compiler.llvm.Type.I32;
+import static org.robovm.compiler.llvm.Type.I8_PTR;
+import static org.robovm.compiler.llvm.Type.I8_PTR_PTR;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -73,6 +83,7 @@ import org.robovm.llvm.binding.CodeGenFileType;
 public class Linker {
     
     private static final TypeInfo[] EMPTY_TYPE_INFOS = new TypeInfo[0];
+    public static final String LINKER_FILENAME = "linker.ll";
     
     private static class TypeInfo implements Comparable<TypeInfo> {
         boolean error;
@@ -124,7 +135,7 @@ public class Linker {
         this.config = config;
     }
     
-    public void link(Set<Clazz> classes) throws IOException {
+    String genLL(Set<Clazz> classes) throws IOException {
         Set<Clazz> linkClasses = new TreeSet<Clazz>(classes);
         config.getLogger().info("Linking %d classes", linkClasses.size());
 
@@ -248,9 +259,8 @@ public class Linker {
                         if (!name.equals("<clinit>") && !name.equals("<init>") 
                                 && !mi.isPrivate() && !mi.isStatic() && !mi.isFinal() && !mi.isAbstract()) {
 
-                            mb.addFunction(createLookup(mb, ci, mi));
+//                            mb.addFunction(createLookupOverride(mb, ci, mi));
                         }
-
                     }
                 }
             }
@@ -259,25 +269,40 @@ public class Linker {
             mb.addFunction(createInstanceof(mb, clazz, typeInfo));
         }
         
+        return mb.build().toString();
+    }
+    
+    public void link(Set<Clazz> linkClasses) throws IOException {
+    	String linker_ir = genLL(linkClasses);
+
+    	List<File> objectFiles = new ArrayList<File>();
+        for (Clazz clazz : linkClasses) {
+            objectFiles.add(config.getOFile(clazz));
+        }
+        linkFromIntermediate(linker_ir, objectFiles);
+    }
+    
+    void linkFromIntermediate(String linker_ir, List<File> objectFiles) throws IOException {
         Arch arch = config.getArch();
         OS os = config.getOs();
         
+    	//invoke LLVM to produce object files
         Context context = new Context();
-        Module module = Module.parseIR(context, mb.build().toString(), "linker.ll");
+        Module module = Module.parseIR(context, linker_ir , LINKER_FILENAME);
+        
         PassManager passManager = new PassManager();
         passManager.addAlwaysInlinerPass();
         passManager.addPromoteMemoryToRegisterPass();
         passManager.run(module);
         passManager.dispose();
-
-        String triple = arch.getLlvmName() + "-unknown-" + os;
+        String triple = config.getTriple();
         Target target = Target.lookupTarget(triple);
         TargetMachine targetMachine = target.createTargetMachine(triple);
         targetMachine.setAsmVerbosityDefault(true);
         targetMachine.setFunctionSections(true);
         targetMachine.setDataSections(true);
         targetMachine.getOptions().setNoFramePointerElim(true);
-        File linkerO = new File(config.getTmpDir(), "linker.o");
+        File linkerO = File.createTempFile("linker",".o");
         linkerO.getParentFile().mkdirs();
         OutputStream outO = null;
         try {
@@ -290,12 +315,8 @@ public class Linker {
         module.dispose();
         context.dispose();
         
-        List<File> objectFiles = new ArrayList<File>();
-        objectFiles.add(linkerO);
+        objectFiles.add(0,linkerO);//add in front so lookup overrides work via linkonce
         
-        for (Clazz clazz : linkClasses) {
-            objectFiles.add(config.getOFile(clazz));
-        }
         config.getTarget().build(objectFiles);
     }
 
@@ -481,8 +502,9 @@ public class Linker {
         return fn;
     }
 
-    private Function createLookup(ModuleBuilder mb, ClazzInfo ci, MethodInfo mi) {
-        Function function = FunctionBuilder.lookup(ci, mi, false);
+    //overrides VTable lookups
+    private Function createLookupOverride(ModuleBuilder mb, ClazzInfo ci, MethodInfo mi) {
+        Function function = FunctionBuilder.lookupExternal(ci, mi);
         String targetFnName = mangleMethod(ci.getInternalName(), mi.getName(), mi.getDesc());
         if (mi.isSynchronized()) {
             targetFnName += "_synchronized";
@@ -499,5 +521,4 @@ public class Linker {
     private Value getInfoStruct(ModuleBuilder mb, Function f, Clazz clazz) {
         return new ConstantBitcast(mb.getGlobalRef(mangleClass(clazz.getInternalName()) + "_info_struct"), I8_PTR_PTR);
     }
-
 }
