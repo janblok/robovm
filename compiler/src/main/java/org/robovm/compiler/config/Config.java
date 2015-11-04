@@ -666,19 +666,19 @@ public class Config {
                         + "lib/robovm-rt.jar missing or invalid");
             }
             
-            // Compare the version of this compiler with the version of the
-            // robovm-rt.jar in the home dir. They have to match.
-            try {
-                String thisVersion = Version.getVersion();
-                String thatVersion = getImplementationVersion(rtJarFile);
-                if (thisVersion == null || thatVersion == null || !thisVersion.equals(thatVersion)) {
-                    throw new IllegalArgumentException(error + "version mismatch (expected: " 
-                            + thisVersion + ", was: " + thatVersion + ")");
-                }
-            } catch (IOException e) {
-                throw new IllegalArgumentException(error 
-                        + "failed to get version of rt jar", e);
-            }
+//            // Compare the version of this compiler with the version of the
+//            // robovm-rt.jar in the home dir. They have to match.
+//            try {
+//                String thisVersion = Version.getVersion();
+//                String thatVersion = getImplementationVersion(rtJarFile);
+//                if (thisVersion == null || thatVersion == null || !thisVersion.equals(thatVersion)) {
+//                    throw new IllegalArgumentException(error + "version mismatch (expected: " 
+//                            + thisVersion + ", was: " + thatVersion + ")");
+//                }
+//            } catch (IOException e) {
+//                throw new IllegalArgumentException(error 
+//                        + "failed to get version of rt jar", e);
+//            }
         }
 
         private static Home validateDevRootDir(File dir) {

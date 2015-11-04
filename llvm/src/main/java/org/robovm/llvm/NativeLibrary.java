@@ -64,29 +64,42 @@ public class NativeLibrary {
         String prefix = libName.substring(0, libName.lastIndexOf('.'));
         String ext = libName.substring(libName.lastIndexOf('.'));
         
-        InputStream in = NativeLibrary.class.getResourceAsStream("binding/" + os + "/" + arch + "/" + libName);
-        if (in == null) {
-            throw new UnsatisfiedLinkError("Native library for " + os + "-" + arch + " not found");
+        try
+        {
+        	System.loadLibrary(libName);
         }
-        OutputStream out = null;
-        File tmpLibFile = null;
-        try {
-            tmpLibFile = File.createTempFile(prefix, ext);
-            tmpLibFile.deleteOnExit();
-            out = new BufferedOutputStream(new FileOutputStream(tmpLibFile));
-            copy(in, out);
-        } catch (IOException e) {
-            throw (Error) new UnsatisfiedLinkError(e.getMessage()).initCause(e);
-        } finally {
-            closeQuietly(in);
-            closeQuietly(out);
+        catch (UnsatisfiedLinkError err)
+        {
+//        	FileInputStream in = null;
+//        	try {
+//				in = new FileInputStream("C:\\Users\\Jan Blok\\git\\robovm\\llvm\\src\\main\\resources\\org\\robovm\\llvm\\binding\\windows\\x86_64\\librobovm-llvm.dll");
+//			} catch (FileNotFoundException e1) {
+//				// TODO Auto-generated catch block
+//				e1.printStackTrace();
+//			}
+	        InputStream in = NativeLibrary.class.getResourceAsStream("binding/" + os + "/" + arch + "/" + libName);
+	        if (in == null) {
+	            throw new UnsatisfiedLinkError("Native library for " + os + "-" + arch + " not found");
+	        }
+	        OutputStream out = null;
+	        File tmpLibFile = null;
+	        try {
+	            tmpLibFile = File.createTempFile(prefix, ext);
+	            tmpLibFile.deleteOnExit();
+	            out = new BufferedOutputStream(new FileOutputStream(tmpLibFile));
+	            copy(in, out);
+	        } catch (IOException e) {
+	            throw (Error) new UnsatisfiedLinkError(e.getMessage()).initCause(e);
+	        } finally {
+	            closeQuietly(in);
+	            closeQuietly(out);
+	        }
+	        
+	        Runtime.getRuntime().load(tmpLibFile.getAbsolutePath());
+	        if (!LLVM.StartMultithreaded()) {
+	            throw new UnsatisfiedLinkError("LLVMStartMultithreaded failed");
+	        }
         }
-        
-        Runtime.getRuntime().load(tmpLibFile.getAbsolutePath());
-        if (!LLVM.StartMultithreaded()) {
-            throw new UnsatisfiedLinkError("LLVMStartMultithreaded failed");
-        }
-        
         LLVM.InitializeAllTargets();
         LLVM.InitializeAllTargetInfos();
         LLVM.InitializeAllTargetMCs();

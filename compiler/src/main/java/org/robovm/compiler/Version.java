@@ -27,7 +27,7 @@ import org.apache.commons.io.IOUtils;
  */
 public class Version {
 
-    private static String version = null;
+    private static String version = "0.0.8";
 
     /**
      * Returns the version number of the compiler by reading the <code>version.properties</code>
